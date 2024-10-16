@@ -1,0 +1,1 @@
+# fargate-example-infrastructure
