@@ -28,6 +28,7 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
+# 踏み台からアクセスできるようにピアリング接続設定
 resource "aws_route" "main_to_root" {
   route_table_id            = data.terraform_remote_state.root.outputs.route_table_id
   destination_cidr_block    = aws_vpc.main.cidr_block
@@ -74,8 +75,8 @@ resource "aws_route_table" "public" {
 
 resource "aws_route" "default_gw" {
   route_table_id         = aws_route_table.public.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.main.id
+  destination_cidr_block = "0.0.0.0/0" # どこへも行ける
+  gateway_id             = aws_internet_gateway.main.id # インターネットゲートウェイを経由して
 }
 
 resource "aws_route_table_association" "main" {
@@ -90,9 +91,9 @@ resource "aws_route_table_association" "main" {
 resource "aws_subnet" "db" {
   count                   = length(local.availability_zones)
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 4, count.index + length(local.availability_zones) * 2)
+  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 4, count.index + length(local.availability_zones) * 2) # 元のCIDRブロックから4ビットずらす & オフセットを2倍にする
   availability_zone       = local.availability_zones[count.index]
-  map_public_ip_on_launch = false
+  map_public_ip_on_launch = false # パブリックIPを持たない（外部からアクセスできない）
 
   tags = {
     Name = "${local.project}-${local.env}-db-${local.availability_zones[count.index]}"
@@ -127,7 +128,7 @@ resource "aws_subnet" "elasticache" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 4, count.index + length(local.availability_zones) * 3)
   availability_zone       = local.availability_zones[count.index]
-  map_public_ip_on_launch = false
+  map_public_ip_on_launch = false # パブリックIPを持たない（外部からアクセスできない）
 
   tags = {
     Name = "${local.project}-${local.env}-elasticache-${local.availability_zones[count.index]}"
